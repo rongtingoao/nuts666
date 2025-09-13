@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Binance UID 抽獎｜最終版</title>
+  <style>
+    :root{ --bn:#F3BA2F; --ink:#0B0E11; --white:#fefefe; }
+    /* 基本排版 */
+    body{margin:0;background:#000;color:var(--white);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Noto Sans TC",sans-serif;overflow-x:hidden}
+    .wrap{max-width:900px;margin:40px auto;padding:0 16px}
+    h1{font-size:36px;color:var(--bn);text-shadow:0 0 8px #fff,0 0 16px var(--bn);text-align:center}
+
+    /* 結果區 */
+    #result{margin-top:20px;display:none;text-align:center}
+    .winner{font-size:42px;font-weight:900;letter-spacing:1px;margin:20px 0;color:#ffe066;text-shadow:0 0 12px #ffdd33,0 0 24px #ffaa00,0 0 36px #ff8800;animation:glow 1.6s infinite alternate}
+    #special-msg{font-size:20px;font-weight:800;color:#00ffea;display:none;margin-top:8px;text-shadow:0 0 6px #00fff2,0 0 14px #00d5ff,0 0 30px #00b7ff;}
+    @keyframes glow{from{text-shadow:0 0 6px #ffd633,0 0 12px #ffae00}to{text-shadow:0 0 14px #fff200,0 0 28px #ffb300,0 0 42px #ff8800}}
+
+    /* 控制面板(音效) */
+    .panel{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:8px}
+    .panel .right{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #333;border-radius:12px;background:#0b0e11}
+    .panel input[type="range"]{width:120px}
+    .panel label{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+    .btn{padding:12px 22px;font-size:16px;border:none;border-radius:12px;background:linear-gradient(135deg,#fcd535,#f0b90b);color:#000;font-weight:800;cursor:pointer;box-shadow:0 0 12px #fcd535,0 0 24px #f0b90b}
+    .btn.small{padding:8px 12px;font-size:12px}
+
+    /* 橫幅（Binance 風格） */
+    .banner{position:fixed;inset:auto 0 8%;display:none;justify-content:center;pointer-events:none;z-index:9998}
+    .banner .msg{
+      position:relative;display:inline-flex;align-items:center;gap:10px;
+      background:linear-gradient(135deg, rgba(243,186,47,.18), rgba(243,186,47,.06)),
+                 radial-gradient(650px 120px at 50% 120%, rgba(243,186,47,.35), transparent 70%);
+      border:1px solid rgba(243,186,47,.55);
+      color:#fff3bf;padding:14px 22px 14px 20px;border-radius:999px;font-weight:900;letter-spacing:.6px;font-size:22px;
+      backdrop-filter:blur(6px); box-shadow:0 12px 50px rgba(243,186,47,.35), inset 0 0 18px rgba(243,186,47,.18);
+      text-shadow:0 4px 18px rgba(0,0,0,.35);
+      animation: bannerPop .65s ease;
+    }
+    @keyframes bannerPop{0%{transform:translateY(18px) scale(.96);opacity:0}60%{transform:translateY(-4px) scale(1.03);opacity:1}100%{transform:translateY(0) scale(1)}}
+    .banner .msg::before,.banner .msg::after{content:"";width:22px;height:22px;border-radius:6px;box-shadow:0 0 0 2px rgba(243,186,47,.85) inset;display:inline-block}
+    .banner .msg::before{transform:rotate(45deg)}
+    .banner .msg::after{transform:rotate(45deg)}
+    .banner .msg .spark{position:absolute;inset:-10px;pointer-events:none;background:
+      radial-gradient(6px 6px at 10% 60%, rgba(255,255,255,.9), transparent 60%),
+      radial-gradient(5px 5px at 30% 40%, rgba(255,255,255,.7), transparent 60%),
+      radial-gradient(4px 4px at 70% 30%, rgba(255,255,255,.8), transparent 60%),
+      radial-gradient(5px 5px at 85% 70%, rgba(255,255,255,.85), transparent 60%);
+      filter:drop-shadow(0 0 8px rgba(243,186,47,.8));
+      animation:sparkle 1.8s ease-in-out infinite alternate;
+    }
+
+    /* 浮誇慶祝層（黑金聚光+硬幣雨） */
+    .celebrate{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9999;
+      background:radial-gradient(1200px 700px at 50% -10%, rgba(243,186,47,.25), transparent 60%),
+                 linear-gradient(180deg, rgba(11,14,17,.96), rgba(11,14,17,.88));}
+    .celebrate .stage{position:relative; width:min(900px, 92vw); text-align:center}
+    .celebrate .headline{font-size:clamp(28px,4.2vw,56px); font-weight:900; color:#fff8dc; letter-spacing:.6px; text-shadow:0 6px 40px rgba(243,186,47,.45)}
+    .celebrate .subline{margin-top:10px; font-size:clamp(16px,2.2vw,22px); color:#ffe59a; font-weight:800}
+    .celebrate .bn-grid{position:absolute; inset:-20% -20% auto -20%; height:58%; opacity:.25;
+      background-image: linear-gradient(45deg, rgba(243,186,47,.12) 12.5%, transparent 12.5%),
+                        linear-gradient(-45deg, rgba(243,186,47,.12) 12.5%, transparent 12.5%),
+                        linear-gradient(45deg, transparent 87.5%, rgba(243,186,47,.12) 87.5%),
+                        linear-gradient(-45deg, transparent 87.5%, rgba(243,186,47,.12) 87.5%);
+      background-size: 36px 36px; background-position: 0 0, 0 18px, 18px -18px, -18px 0; }
+    .celebrate .spot{position:absolute; width:40vw; max-width:520px; height:60vh; filter:blur(10px); transform-origin:top center; mix-blend-mode:screen; opacity:.7}
+    .celebrate .spot.left{left:-6vw; background:conic-gradient(from 220deg at 50% 0%, rgba(243,186,47,.25), transparent 60%); transform:skewY(-6deg) rotate(-10deg)}
+    .celebrate .spot.right{right:-6vw; background:conic-gradient(from -40deg at 50% 0%, rgba(243,186,47,.25), transparent 60%); transform:skewY(6deg) rotate(10deg)}
+    .celebrate .glowring{position:absolute; inset:auto 0 -40px; margin:auto; width:60%; height:120px; background:radial-gradient(closest-side, rgba(243,186,47,.45), transparent 70%); filter:blur(18px); opacity:.6}
+    .coins{position:absolute; inset:0; overflow:hidden; pointer-events:none}
+    .coin{position:absolute; top:-80px; width:56px; height:56px; will-change:transform, opacity; animation:fall var(--dur) linear var(--delay) forwards; opacity:.9}
+    .coin .spin{width:100%;height:100%;animation:spin var(--dur) linear var(--delay) forwards; transform-style:preserve-3d}
+    @keyframes fall{ to{ transform:translate3d(var(--dx), 110vh, 0) rotate(var(--rz)); opacity:1 } }
+    @keyframes spin{ from{ transform:rotateY(0)} to{ transform:rotateY(1080deg)} }
+    .coin .coin-face{width:100%;height:100%;border-radius:50%;
+      background:radial-gradient(circle at 35% 35%, #fff2b3 0%, #ffd24d 35%, #f3ba2f 60%, #c99400 85%);
+      border:6px solid #7a5b00; display:flex;align-items:center;justify-content:center;
+      box-shadow:0 10px 30px rgba(243,186,47,.35), inset 0 0 18px rgba(243,186,47,.25)}
+    .coin .coin-logo{width:62%;height:62%;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.45))}
+
+    /* Pre-Reveal 視覺 */
+    .pre-reveal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9500;pointer-events:none;
+      background:radial-gradient(900px 600px at 50% 0%, rgba(243,186,47,.08), transparent 60%)}
+    .pre-reveal .pr-canvas{position:absolute;inset:0;opacity:.35;filter:contrast(1.2) brightness(1.05)}
+    .pre-reveal .center{position:relative;display:grid;place-items:center;gap:16px}
+    .pre-reveal .ring{width:min(60vmin,520px);aspect-ratio:1;border-radius:50%;
+      background:radial-gradient(closest-side, rgba(243,186,47,.45), transparent 70%);
+      box-shadow:0 0 40px rgba(243,186,47,.35), inset 0 0 40px rgba(243,186,47,.25); filter:blur(0.5px)}
+    .pre-reveal .cube{position:absolute;width:min(22vmin,200px);aspect-ratio:1;transform-style:preserve-3d;animation:cuberot 8s linear infinite}
+    @keyframes cuberot{ from{ transform:rotateX(-18deg) rotateY(0) } to{ transform:rotateX(-18deg) rotateY(360deg) } }
+    .pre-reveal .face{position:absolute;inset:0;background:#111;border:2px solid rgba(243,186,47,.35);display:grid;place-items:center}
+    .pre-reveal .face img{width:62%;height:62%;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))}
+    .pre-reveal .f1{transform:translateZ(50px)}
+    .pre-reveal .f2{transform:rotateY(90deg) translateZ(50px)}
+    .pre-reveal .f3{transform:rotateY(180deg) translateZ(50px)}
+    .pre-reveal .f4{transform:rotateY(-90deg) translateZ(50px)}
+    .pre-reveal .f5{transform:rotateX(90deg) translateZ(50px)}
+    .pre-reveal .f6{transform:rotateX(-90deg) translateZ(50px)}
+    .pre-reveal .ticker{font-weight:900;letter-spacing:.4px;color:#fff;opacity:.9;text-shadow:0 0 12px rgba(243,186,47,.6);font-size:clamp(16px,2.2vw,22px)}
+
+    /* 中獎 UID 彈窗 */
+    .uid-modal{position:fixed;top:40px;left:50%;transform:translateX(-50%);display:none;align-items:center;justify-content:center;background:transparent;z-index:10000;pointer-events:none}
+    .uid-modal .box{min-width:min(320px,92vw);max-width:92vw;padding:16px 22px;border-radius:18px;background:linear-gradient(135deg, rgba(243,186,47,.22), rgba(243,186,47,.08));border:1px solid rgba(243,186,47,.55);box-shadow:0 12px 42px rgba(0,0,0,.55), inset 0 0 18px rgba(243,186,47,.22);text-align:center;pointer-events:auto}
+    .uid-modal .title{font-weight:900;letter-spacing:.6px;color:#fff3bf;text-shadow:0 0 8px rgba(243,186,47,.6);font-size:20px;margin-bottom:6px}
+    .uid-modal .uid{font-size:clamp(28px,6vw,56px);font-weight:900;color:#ffe066;text-shadow:0 0 12px #ffdd33,0 0 24px #ffaa00}
+    @keyframes modalPop{0%{transform:scale(.92);opacity:0}70%{transform:scale(1.04);opacity:1}100%{transform:scale(1)}}
+    .uid-modal .box{animation:modalPop .45s ease}
+
+    /* 右側「中獎紀錄」側欄 */
+    .history{position:fixed; right:12px; bottom:12px; top:auto; width:280px; max-height:50vh; overflow:auto; z-index:9800; pointer-events:auto;
+      background:linear-gradient(180deg, rgba(243,186,47,.10), rgba(243,186,47,.05));
+      border:1px solid rgba(243,186,47,.45); border-radius:14px; box-shadow:0 8px 40px rgba(0,0,0,.45), inset 0 0 18px rgba(243,186,47,.12)}
+    .hist-head{position:sticky; top:0; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px;
+      background:rgba(11,14,17,.9); border-bottom:1px solid rgba(243,186,47,.25); font-weight:900; letter-spacing:.6px; color:#fff3bf}
+    .hist-clear{padding:6px 10px; font-size:12px; border:none; border-radius:10px; cursor:pointer; background:linear-gradient(135deg,#fcd535,#f0b90b); color:#000; font-weight:800}
+    .hist-list{list-style:none; margin:0; padding:10px}
+    .hist-list li{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; margin:6px 0; border-radius:10px;
+      background:rgba(0,0,0,.35); border:1px solid rgba(243,186,47,.18)}
+    .hist-list .uid{font-weight:900; color:#ffe066; text-shadow:0 0 8px rgba(255,221,51,.55)}
+    .hist-list .time{font-size:12px; opacity:.85; color:#d1d5db}
+    .hist-list li.new{animation:histPop .5s ease}
+    @keyframes histPop{0%{transform:translateY(-6px) scale(.96); box-shadow:0 0 0 rgba(243,186,47,0)}60%{transform:translateY(2px) scale(1.02); box-shadow:0 8px 30px rgba(243,186,47,.35)}100%{transform:translateY(0) scale(1)}}
+    @media (max-width: 720px){ .history{left:12px; right:12px; width:auto; top:auto; bottom:12px; max-height:38vh} }
+
+    /* 預留側欄空間（目前視覺上不需 padding-right） */
+    body.reserve-history{ padding-right: 0; }
+    @media (max-width: 720px){ body.reserve-history{ padding-right: 0; } }
+
+    /* === 位置微調（依你的要求）=== */
+    /* 中獎 UID 彈窗的內容往上 10px */
+    .uid-modal .box{ transform: translateY(-10px); }
+    /* 全屏慶祝舞台往下 10px */
+    .celebrate .stage{ transform: translateY(10px); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Binance NUTS堅果 抽獎 🎉</h1>
+
+    <!-- 音效控制 -->
+    <div class="panel">
+      <div class="right">
+        <label><input type="checkbox" id="sfx-toggle" checked/> 音效</label>
+        <input type="range" id="sfx-volume" min="0" max="1" step="0.01" value="0.8" title="音量"/>
+        <label><input type="checkbox" id="sfx-use-sample"/> 自訂中獎音效</label>
+        <button id="sfx-set-url" class="btn small" title="設定自訂中獎音效 URL">設定音效URL</button>
+        <button id="sfx-upload" class="btn small" title="從本機上傳音效檔">上傳音效</button>
+        <input id="sfx-file" type="file" accept="audio/*" style="display:none" />
+        <label>起點秒 <input id="sfx-offset" type="number" step="0.1" min="0" value="0" style="width:72px"></label>
+        <label>長度秒 <input id="sfx-dur" type="number" step="0.1" min="0.1" value="10" style="width:72px"></label>
+      </div>
+    </div>
+
+    <!-- 抽獎名單輸入區 -->
+    <section class="draw-input" style="margin-top:16px;">
+      <label for="uid-input" style="font-weight:900; letter-spacing:.4px; color:#fff3bf; display:block">抽獎名單（每行一個 UID，或用逗號分隔）</label>
+      <textarea id="uid-input" placeholder="例：&#10;12345678&#10;23456789&#10;34567890" style="width:100%; min-height:140px; margin-top:6px; padding:10px; border-radius:12px; background:#0b0e11; color:#e5e7eb; border:1px solid #333; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;"></textarea>
+      <div style="display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap">
+        <label style="font-weight:800">
+          一次抽出
+          <select id="draw-count" style="padding:8px 10px; border-radius:10px; background:#0b0e11; color:#e5e7eb; border:1px solid #333">
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+            <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+          </select>
+          位
+        </label>
+        <button id="btn-draw" class="btn">開始抽獎</button>
+        <small style="opacity:.75">（會自動去空白、重複與非數字）</small>
+      </div>
+    </section>
+
+    <!-- 抽獎結果 -->
+    <div id="result">
+      <div class="winner" id="winner"></div>
+      <div id="special-msg" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- 右側中獎紀錄 -->
+  <aside id="history" class="history" aria-label="中獎紀錄">
+    <div class="hist-head">中獎紀錄 <button id="history-clear" class="hist-clear">清除</button></div>
+    <ol id="history-list" class="hist-list"></ol>
+  </aside>
+
+  <!-- 橫幅容器 -->
+  <div id="winner-banner" class="banner"><div class="msg"></div></div>
+
+  <!-- Pre-Reveal 視覺層 -->
+  <div id="pre-reveal" class="pre-reveal" aria-hidden="true">
+    <canvas id="viz" class="pr-canvas"></canvas>
+    <div class="center">
+      <div class="ring" id="pr-ring"></div>
+      <div class="cube boxy" id="pr-cube">
+        <div class="face f1"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Binance_Logo.svg" alt="Binance"/></div>
+        <div class="face f2"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Binance_Logo.svg" alt="Binance"/></div>
+        <div class="face f3"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Binance_Logo.svg" alt="Binance"/></div>
+        <div class="face f4"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Binance_Logo.svg" alt="Binance"/></div>
+        <div class="face f5"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Binance_Logo.svg" alt="Binance"/></div>
+        <div class="face f6"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Binance_Logo.svg" alt="Binance"/></div>
+      </div>
+      <div class="ticker" id="pr-ticker">UID 正在占卜中…</div>
+    </div>
+  </div>
+
+  <!-- 浮誇慶祝層 -->
+  <div id="celebrate" class="celebrate" aria-hidden="true">
+    <div class="stage">
+      <div class="headline">👑 恭喜中獎! 👑</div>
+      <div class="subline" id="celebrate-text">恭喜中獎！</div>
+      <div class="glowring"></div>
+      <div class="coins" id="coins"></div>
+    </div>
+  </div>
+
+  <!-- 中獎 UID 彈窗 -->
+  <div id="uid-modal" class="uid-modal" aria-hidden="true">
+    <div class="box">
+      <div class="title">恭喜中獎 UID</div>
+      <div id="uid-text" class="uid">—</div>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+    const $ = (id)=>document.getElementById(id);
+    const LOGO_URL = 'https://upload.wikimedia.org/wikipedia/commons/e/e8/Binance_Logo.svg';
+    window.LOGO_OK = true;
+    function preloadLogo(url){
+      return new Promise(res=>{ const img=new Image(); img.onload=()=>res(true); img.onerror=()=>res(false); img.src=url; });
+    }
+
+    // === 音效系統(Web Audio) ===
+    const SFX = (()=>{
+      let ac, master, _enabled=true, volume=0.8, nodes=[];
+      let _busy=false, _busyTimer=null, _lastAnalyser=null;
+      let _winSampleBuf=null, _useWinSample=false;
+      let _sliceStart=0, _sliceDur=null;
+      function emit(name, detail){ try{ window.dispatchEvent(new CustomEvent('sfx:'+name,{detail})); }catch{} }
+      function getAC(){
+        if(!_enabled) return null;
+        if(!ac){
+          const C = window.AudioContext || window.webkitAudioContext;
+          if(!C) return null;
+          ac = new C();
+          master = ac.createGain();
+          master.gain.value = volume;
+          master.connect(ac.destination);
+        }
+        if(ac && ac.state==='suspended') ac.resume();
+        return ac;
+      }
+      function setVol(v){ volume = v; if(master) master.gain.value = v; }
+      function stopAll(){ nodes.forEach(n=>{try{n.stop?.(); n.disconnect?.();}catch{}}); nodes=[]; _lastAnalyser=null; }
+      function _markBusy(ms){ _busy = true; if(_busyTimer) clearTimeout(_busyTimer); _busyTimer = setTimeout(()=>{ _busy=false; _busyTimer=null; emit('playend'); }, Math.max(200, (ms|0)+200)); }
+      async function setWinSample(url){ _winSampleBuf=null; try{ const ctx=getAC(); if(!ctx) return false; const res=await fetch(url, {mode:'cors'}); const ab=await res.arrayBuffer(); _winSampleBuf = await ctx.decodeAudioData(ab); return true; }catch{ _winSampleBuf=null; return false; } }
+      function useWinSample(v){ _useWinSample = !!v; }
+      async function setWinSampleFromArrayBuffer(ab){ try{ const ctx=getAC(); if(!ctx) return false; _winSampleBuf = await ctx.decodeAudioData(ab.slice(0)); return true; }catch{ _winSampleBuf=null; return false; } }
+      function playWinSample(ctx, when, offsetSec=0, durSec=null){
+        if(!_winSampleBuf) return false;
+        const src=ctx.createBufferSource(); src.buffer=_winSampleBuf;
+        const g=ctx.createGain(); g.gain.value=1;
+        const an=ctx.createAnalyser(); an.fftSize=256; an.smoothingTimeConstant=0.6; _lastAnalyser=an;
+        src.connect(g); g.connect(an); an.connect(master);
+        const at = Math.max(ctx.currentTime + 0.02, (when||ctx.currentTime));
+        try{ if(durSec && durSec>0){ src.start(at, Math.max(0, offsetSec), Math.max(0.01, durSec)); } else { src.start(at, Math.max(0, offsetSec)); } }catch{ try{ src.start(at); }catch{} }
+        nodes.push(src,g,an);
+        return true;
+      }
+      function tickOnce(ctx, when){
+        const len = ctx.sampleRate*0.045;
+        const b = ctx.createBuffer(1,len,ctx.sampleRate); const d=b.getChannelData(0);
+        for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);
+        const src=ctx.createBufferSource(); src.buffer=b;
+        const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=2500; hp.Q.value=0.8;
+        const g=ctx.createGain(); g.gain.value=0.05;
+        const an=ctx.createAnalyser(); an.fftSize=256; an.smoothingTimeConstant=0.6; _lastAnalyser=an;
+        src.connect(hp); hp.connect(g); g.connect(an); an.connect(master);
+        src.start(when);
+        nodes.push(src,hp,g,an);
+        const o=ctx.createOscillator(); o.type='square'; o.frequency.setValueAtTime(220, when); o.frequency.exponentialRampToValueAtTime(440, when+0.04);
+        const og=ctx.createGain(); og.gain.setValueAtTime(0.0001, when); og.gain.exponentialRampToValueAtTime(0.06, when+0.01); og.gain.exponentialRampToValueAtTime(0.0001, when+0.05);
+        o.connect(og); og.connect(master); o.start(when); o.stop(when+0.06);
+        nodes.push(o,og);
+      }
+      function playLottery(ms=2000){
+        const ctx = getAC(); if(!ctx) return Promise.resolve();
+        stopAll();
+        const t0 = ctx.currentTime;
+        if(_useWinSample && _winSampleBuf){
+          const total = _winSampleBuf.duration||0;
+          let off = Math.max(0, Number(_sliceStart)||0);
+          let dur = (_sliceDur && _sliceDur>0) ? Number(_sliceDur) : Math.max(0.05, total - off);
+          if(off + dur > total){ off = Math.max(0, total - dur); }
+          playWinSample(ctx, t0, off, dur);
+          emit('playstart', {ms: dur*1000}); _markBusy(dur*1000);
+          setTimeout(stopAll, dur*1000+400);
+          return new Promise(res=>setTimeout(res, dur*1000));
+        }
+        const buf = ctx.createBuffer(1, ctx.sampleRate*1.5, ctx.sampleRate);
+        const ch = buf.getChannelData(0); for(let i=0;i<ch.length;i++) ch[i]=Math.random()*2-1;
+        const noise = ctx.createBufferSource(); noise.buffer=buf;
+        const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=8; bp.frequency.value=500;
+        const g = ctx.createGain(); g.gain.value=0.0001;
+        const an=ctx.createAnalyser(); an.fftSize=256; an.smoothingTimeConstant=0.6; _lastAnalyser=an;
+        noise.connect(bp); bp.connect(g); g.connect(an); an.connect(master);
+        const tEnd = t0 + ms/1000;
+        g.gain.exponentialRampToValueAtTime(0.18, tEnd-0.2);
+        bp.frequency.exponentialRampToValueAtTime(2400, tEnd);
+        noise.start(t0);
+        nodes.push(noise,bp,g,an);
+        emit('playstart', {ms: ms});
+        const startIv=0.16, endIv=0.045; let iv=startIv, tNow=t0;
+        while(tNow < tEnd){ tickOnce(ctx, tNow); tNow += iv; const p = (tNow - t0) / (tEnd - t0); iv = startIv + (endIv - startIv) * Math.pow(p, 1.2); }
+        for(let i=0;i<4;i++){ tickOnce(ctx, tEnd + i*0.04); }
+        const when=tEnd + 0.08;
+        (function win(){
+          const o=ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(110, when); o.frequency.exponentialRampToValueAtTime(55, when+0.6);
+          const gg=ctx.createGain(); gg.gain.setValueAtTime(0.0001, when); gg.gain.exponentialRampToValueAtTime(0.16, when+0.06); gg.gain.exponentialRampToValueAtTime(0.0001, when+0.7);
+          o.connect(gg); gg.connect(master); o.start(when); o.stop(when+0.72); nodes.push(o,gg);
+        })();
+        _markBusy(ms+600);
+        setTimeout(stopAll, ms+600);
+        return new Promise(res=>setTimeout(res, Math.max(0, ms+120)));
+      }
+      function setSlice(startSec, durSec){ _sliceStart = Math.max(0, Number(startSec)||0); _sliceDur = durSec!=null ? Math.max(0.01, Number(durSec)||0) : null; }
+      async function unlock(){ const ctx=getAC(); if(!ctx) return false; try{ if(ctx.state==='suspended'){ await ctx.resume(); } }catch{} return ctx && ctx.state==='running'; }
+      return { get enabled(){return _enabled;}, set enabled(v){ _enabled=v; if(v) getAC(); }, setVol, playLottery, setWinSample, setWinSampleFromArrayBuffer, useWinSample, setSlice, _hasWinSample:()=>!!_winSampleBuf, getAnalyser:()=>_lastAnalyser, unlock };
+    })();
+
+    // 綁定音效控制 + 初始佈局
+    window.addEventListener('DOMContentLoaded', async ()=>{
+      window.LOGO_OK = await preloadLogo(LOGO_URL);
+
+      // 音效控制 UI 綁定
+      const toggle=$('sfx-toggle'), vol=$('sfx-volume');
+      if(toggle){ toggle.onchange=e=>{ SFX.enabled = e.target.checked; }; }
+      if(vol){ vol.oninput=e=>{ SFX.setVol(parseFloat(e.target.value||'0.8')); }; }
+
+      const useSample=$('sfx-use-sample');
+      const setUrlBtn=$('sfx-set-url');
+      const uploadBtn=$('sfx-upload');
+      const fileIn=$('sfx-file');
+      const inputOffset=$('sfx-offset');
+      const inputDur=$('sfx-dur');
+
+      if(useSample){ useSample.onchange=e=>{ SFX.useWinSample(e.target.checked); }; }
+      if(setUrlBtn){ setUrlBtn.onclick=async ()=>{
+        const url=prompt('輸入中獎音效檔 URL (mp3/wav/ogg)\\n*注意：YouTube/Spotify 連結無法直接載入，請提供可直接存取的音訊檔網址');
+        if(url){
+          setUrlBtn.disabled=true; uploadBtn && (uploadBtn.disabled=true);
+          const ok=await SFX.setWinSample(url);
+          setUrlBtn.disabled=false; uploadBtn && (uploadBtn.disabled=false);
+          if(ok){ if(useSample){ useSample.checked=true; } SFX.useWinSample(true); alert('已載入成功！'); }
+          else { alert('載入失敗，請確認 URL 與 CORS 設定'); }
+        }
+      }; }
+      if(uploadBtn && fileIn){
+        uploadBtn.onclick=()=> fileIn.click();
+        fileIn.onchange=async (e)=>{
+          const f = e.target.files && e.target.files[0];
+          if(!f) return;
+          setUrlBtn && (setUrlBtn.disabled=true); uploadBtn.disabled=true;
+          try{
+            const ab = await f.arrayBuffer();
+            const ok = await SFX.setWinSampleFromArrayBuffer(ab);
+            if(ok){ if(useSample){ useSample.checked=true; } SFX.useWinSample(true); alert('本機音效已載入！'); }
+            else { alert('載入失敗，檔案格式不支援或損毀'); }
+          }finally{
+            uploadBtn.disabled=false; setUrlBtn && (setUrlBtn.disabled=false);
+            fileIn.value='';
+          }
+        };
+      }
+      if(inputOffset && inputDur){
+        const applySlice=()=>{
+          const s=parseFloat(inputOffset.value||'0')||0; const d=parseFloat(inputDur.value||'0')||0; SFX.setSlice(s,d>0?d:null);
+        };
+        inputOffset.addEventListener('change', applySlice);
+        inputDur.addEventListener('change', applySlice);
+        SFX.setSlice(36,18); if(useSample){ useSample.checked=true; SFX.useWinSample(true); }
+      }
+    });
+
+    // Pre-Reveal 視覺（依音效分析做條狀動畫）
+    (function(){
+      const layer = $('pre-reveal');
+      const canvas = $('viz'); const ctx = canvas.getContext('2d');
+      const ring = $('pr-ring'); const cube = $('pr-cube'); const ticker = $('pr-ticker');
+      let raf=0, start=0, duration=0, bars=64, tickerTimer=null;
+      function resize(){ canvas.width = innerWidth*2; canvas.height = innerHeight*2; }
+      window.addEventListener('resize', resize, {passive:true}); resize();
+      
+      function draw(){
+        const an = SFX.getAnalyser && SFX.getAnalyser();
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        let level=0.2;
+        if(an){
+          const arr = new Uint8Array(an.frequencyBinCount); an.getByteFrequencyData(arr);
+          const step = Math.floor(arr.length/bars);
+          level = 0;
+          for(let i=0;i<bars;i++){ level += arr[i*step]; }
+          level = (level/(bars*255));
+          const w = canvas.width, h = canvas.height, barW = Math.max(6, w/(bars*1.5));
+          const baseY = h*0.68;
+          for(let i=0;i<bars;i++){
+            const v = arr[i*step]/255; const bh = Math.pow(v,1.8)*h*0.35 + 8;
+            const x = (w/bars)*i + (w/bars - barW)/2;
+            ctx.fillStyle = `rgba(243,186,47,${0.35 + 0.65*v})`;
+            ctx.fillRect(x, baseY-bh, barW, bh);
+          }
+        }
+        const glow = 0.6 + level*0.9; ring.style.boxShadow=`0 0 ${30+70*level}px rgba(243,186,47,${glow}) inset, 0 0 ${40+80*level}px rgba(243,186,47,${glow})`;
+        cube.style.animationDuration = `${Math.max(3.2, 10 - level*3)}s`;
+        if((performance.now()-start) < duration+300){ raf = requestAnimationFrame(draw); }
+      }
+      function rndUID(){ return Array.from({length:8}, ()=>Math.floor(Math.random()*10)).join(''); }
+      function startTicker(){ stopTicker(); tickerTimer=setInterval(()=>{ ticker.textContent = 'UID 抽取中：' + rndUID().replace(/(\d{4})(\d{4})/,'$1 ****'); }, 80); }
+      function stopTicker(){ if(tickerTimer){ clearInterval(tickerTimer); tickerTimer=null; } }
+      function show(ms){ duration=ms; start=performance.now(); layer.style.display='flex'; layer.setAttribute('aria-hidden','false'); startTicker(); draw(); }
+      function hide(){ layer.style.display='none'; layer.setAttribute('aria-hidden','true'); cancelAnimationFrame(raf); stopTicker(); ctx.clearRect(0,0,canvas.width,canvas.height); }
+      window.addEventListener('sfx:playstart', (e)=>{ show((e.detail&&e.detail.ms)||2000); });
+      window.addEventListener('sfx:playend', hide);
+    })();
+
+    // 中獎紀錄（側欄）
+    (function(){
+      const KEY='uidHistory.v1';
+      const listEl = ()=>$('history-list');
+      function read(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch{ return []; } }
+      function save(arr){ try{ localStorage.setItem(KEY, JSON.stringify((arr||[]).slice(0,200))); }catch{} }
+      function fmt(ts){ try{ const d=new Date(ts); const h=String(d.getHours()).padStart(2,'0'); const m=String(d.getMinutes()).padStart(2,'0'); const s=String(d.getSeconds()).padStart(2,'0'); return `${h}:${m}:${s}`;}catch{return '';} }
+      function render(highlight=false){ const el=listEl(); if(!el) return; const arr=read(); el.innerHTML = arr.map((r,i)=>`<li${i===0&&highlight?' class="new"':''}><span class="uid">${r.uid}</span><span class="time">${fmt(r.t)}</span></li>`).join(''); }
+      window.addHistory = function(uid){ const arr=read(); arr.unshift({uid:String(uid||''), t: Date.now()}); save(arr); render(true); };
+      window.clearHistory = function(){ save([]); render(false); };
+      window.addEventListener('DOMContentLoaded', ()=>{ render(false); const btn=$('history-clear'); if(btn){ btn.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); let ok=true; try{ ok = (typeof confirm==='function') ? confirm('清除所有中獎紀錄？') : true; }catch{ ok=true; } if(ok!==false){ clearHistory(); try{ showBanner('已清除中獎紀錄', 1200); }catch{} } }, {passive:false}); } });
+    })();
+
+    // 橫幅
+    function showBanner(text, ms=2600){
+      const banner = $('winner-banner');
+      banner.innerHTML = '<div class="msg"><span>🥳</span>'+ String(text).replace(/</g,'&lt;') +'<span>🎊</span><i class="spark"></i></div>';
+      banner.style.display='flex';
+      setTimeout(()=>{ banner.style.display='none'; }, ms);
+    }
+
+    // 浮誇慶祝(硬幣雨)
+    function grandCelebrate(text, duration=3500){
+      const layer = $('celebrate');
+      const out = $('coins');
+      $('celebrate-text').textContent = text || '恭喜中獎！';
+      out.innerHTML='';
+      const N = window.LOGO_OK ? 42 : 0;
+      for(let i=0;i<N;i++){
+        const d = document.createElement('div'); d.className='coin';
+        const delay = (Math.random()*0.8).toFixed(2)+'s';
+        const dur = (2.4+Math.random()*1.6).toFixed(2)+'s';
+        const dx = (Math.random()*100-50).toFixed(0)+'vw';
+        const rz = (Math.random()*720-360).toFixed(0)+'deg';
+        d.style.setProperty('--delay', delay);
+        d.style.setProperty('--dur', dur);
+        d.style.setProperty('--dx', dx);
+        d.style.setProperty('--rz', rz);
+        d.style.left = (Math.random()*100)+'%';
+        d.innerHTML = `<div class="spin">
+          <div class="coin-face">
+            <img class="coin-logo" src="${LOGO_URL}" alt="Binance logo"/>
+          </div>
+        </div>`;
+        out.appendChild(d);
+      }
+      layer.style.display='flex';
+      setTimeout(()=>{ layer.style.display='none'; }, duration);
+    }
+
+    // 中獎 UID 彈窗
+    function showUidModal(uid, opts={}){
+      const { autoHide=true, ms=2600 } = opts;
+      const m = $('uid-modal'); const t=$('uid-text');
+      t.textContent = String(uid);
+      m.style.visibility='hidden';
+      m.style.display='flex'; m.setAttribute('aria-hidden','false');
+      // 計算與結果區避免重疊
+      let top = 40;
+      try{
+        const resEl = $('result');
+        if(resEl && getComputedStyle(resEl).display !== 'none'){
+          const r = resEl.getBoundingClientRect();
+          top = Math.max(40, r.bottom + 12);
+        }
+        const box = m.querySelector('.box');
+        const h = box ? box.getBoundingClientRect().height : m.getBoundingClientRect().height;
+        top = Math.min(top, window.innerHeight - h - 12);
+        if(!Number.isFinite(top) || top < 12) top = 40;
+      }catch{ top = 40; }
+      m.style.top = top + 'px';
+      m.style.visibility='visible';
+      if(autoHide){ setTimeout(()=>{ hideUidModal(); }, ms); }
+    }
+    function hideUidModal(){ const m=$('uid-modal'); if(m){ m.style.display='none'; m.setAttribute('aria-hidden','true'); } }
+
+    // ===== 名單解析、抽樣與呈現 =====
+    function parseUIDList(raw){
+      if(!raw) return [];
+      const parts = String(raw).split(/[\n,]+/);
+      const cleaned = parts
+        .map(s=>String(s).trim())
+        .filter(Boolean)
+        .map(s=>s.replace(/\D+/g,'')) // 只留數字
+        .filter(s=>s.length>=1);
+      const seen = new Set(), uniq=[];
+      for(const id of cleaned){ if(!seen.has(id)){ seen.add(id); uniq.push(id); } }
+      return uniq;
+    }
+    function drawWinners(pool, n){
+      const arr = pool.slice();
+      for(let i=arr.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr.slice(0, n);
+    }
+    async function presentWinners(uids){
+      const n = uids.length; if(n<=0) return;
+      try{ await SFX.unlock(); }catch{}
+      await SFX.playLottery(Math.min(2400, 800 + n*250));
+      const msg = (n===1) ? `🎉 得獎者 UID：${uids[0]}` : `🎉 本次抽出 ${n} 位：`+uids.join(', ');
+      $('result').style.display = 'block';
+      $('winner').textContent = msg;
+      if(n===1){ showUidModal(uids[0], {autoHide:true, ms:2600}); }
+      showBanner(`本次抽出 ${n} 位${n===1?`：${uids[0]}`:''}`, 2600);
+      grandCelebrate('恭喜中獎！', 3200);
+      try{ uids.forEach(uid=>addHistory(uid)); }catch{}
+    }
+
+    // 事件：開始抽獎
+    $('btn-draw').onclick = async ()=>{
+      const raw = $('uid-input').value;
+      let pool = parseUIDList(raw);
+      const want = Math.max(1, parseInt($('draw-count').value||'1', 10));
+      if(pool.length===0){ alert('請先在「抽獎名單」輸入至少一個 UID（每行或逗號分隔）。'); return; }
+      if(want > pool.length){ alert(`名單只有 ${pool.length} 個，無法抽出 ${want} 位。`); return; }
+      const winners = drawWinners(pool, want);
+      await presentWinners(winners);
+    };
+
+  </script>
+</body>
+</html>
